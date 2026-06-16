@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyToken } from "@/lib/auth";
 import LogoutButton from "@/components/LogoutButton";
-import { UserRole } from "@/models/User";
+import { UserRole } from "@/lib/auth";
 import { Shield, Building, Activity } from "lucide-react";
 
 export const dynamic = "force-dynamic";

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, verifyToken, JWTPayload } from "./auth";
-import { UserRole } from "@/models/User";
+import { getTokenFromRequest, verifyToken, JWTPayload, UserRole } from "./auth";
 
 /**
  * Retrieves the authenticated user payload from the request.

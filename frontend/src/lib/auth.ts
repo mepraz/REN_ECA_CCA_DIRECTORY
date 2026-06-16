@@ -4,17 +4,16 @@ import { NextRequest } from "next/server";
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development_change_it_immediately";
 const TOKEN_COOKIE_NAME = "auth_token";
 
+export enum UserRole {
+  MAIN_ADMIN = "MAIN_ADMIN",
+  COLLEGE_ADMIN = "COLLEGE_ADMIN",
+}
+
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: string;
+  role: UserRole;
   organizationId?: string;
-}
-
-export function signToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: "7d",
-  });
 }
 
 export function verifyToken(token: string): JWTPayload | null {
@@ -37,15 +36,4 @@ export function getTokenFromRequest(req: NextRequest): string | null {
   }
 
   return null;
-}
-
-export function getCookieOptions() {
-  return {
-    name: TOKEN_COOKIE_NAME,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
-    path: "/",
-  };
 }
