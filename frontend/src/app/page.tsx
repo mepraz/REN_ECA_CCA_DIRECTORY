@@ -11,13 +11,20 @@ export default async function DashboardPage() {
   const token = cookieStore.get("auth_token")?.value;
 
   if (!token) {
+    console.warn("[dashboard] missing auth_token cookie");
     redirect("/login");
   }
 
   const payload = verifyToken(token);
   if (!payload) {
+    console.warn("[dashboard] invalid auth_token cookie");
     redirect("/login");
   }
+
+  console.log("[dashboard] authenticated render", {
+    email: payload.email,
+    role: payload.role,
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-800">

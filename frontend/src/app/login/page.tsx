@@ -3,15 +3,16 @@
 export const dynamic = "force-dynamic";
 
 import React, { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Lock, Mail, Loader2, AlertCircle, CheckCircle, Shield } from "lucide-react";
 
+const DASHBOARD_PATH = "/";
+
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,6 +33,13 @@ function LoginForm() {
     }
 
     try {
+      console.log("[login] submitting credentials", {
+        email,
+        target: "/api/auth/login",
+        currentPath: window.location.pathname,
+        from: searchParams?.get("from"),
+      });
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,6 +47,13 @@ function LoginForm() {
       });
 
       const data = await res.json();
+      console.log("[login] response received", {
+        ok: res.ok,
+        status: res.status,
+        message: data?.message,
+        error: data?.error,
+        hasUser: Boolean(data?.user),
+      });
 
       if (!res.ok) {
         throw new Error(data.error || "Login failed");
@@ -46,14 +61,23 @@ function LoginForm() {
 
       setSuccess("Authentication successful! Redirecting...");
       
-      const fromPath = searchParams?.get("from") || "/";
+      const fromPath = searchParams?.get("from");
+      const redirectPath =
+        fromPath && fromPath.startsWith("/") && !fromPath.startsWith("/login")
+          ? fromPath
+          : DASHBOARD_PATH;
+
+      console.log("[login] redirecting after success", {
+        redirectPath,
+        usedFromPath: Boolean(fromPath),
+      });
       
       setTimeout(() => {
-        router.push(fromPath);
-        router.refresh();
+        window.location.replace(redirectPath);
       }, 1000);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      console.error("[login] failed", err);
       setError(errorMessage);
     } finally {
       setLoading(false);

@@ -23,20 +23,41 @@ const getCookieOptions = () => {
 router.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log("[auth/login] request received", {
+            hasEmail: Boolean(email),
+            hasPassword: Boolean(password),
+            origin: req.headers.origin,
+            host: req.headers.host,
+            cookieHeaderPresent: Boolean(req.headers.cookie),
+            nodeEnv: process.env.NODE_ENV || "development",
+        });
         if (!email || !password) {
+            console.warn("[auth/login] missing credentials", {
+                hasEmail: Boolean(email),
+                hasPassword: Boolean(password),
+            });
             return res.status(400).json({ error: "Email and password are required" });
         }
         const user = await User_js_1.default.findOne({ email: email.toLowerCase() });
         if (!user) {
+            console.warn("[auth/login] user not found", { email: email.toLowerCase() });
             return res.status(401).json({ error: "Invalid email or password" });
         }
         if (!user.isActive) {
+            console.warn("[auth/login] inactive user", {
+                userId: String(user._id),
+                email: user.email,
+            });
             return res.status(403).json({
                 error: "Your account is deactivated. Please contact the administrator.",
             });
         }
         const isMatch = await bcryptjs_1.default.compare(password, user.password || "");
         if (!isMatch) {
+            console.warn("[auth/login] invalid password", {
+                userId: String(user._id),
+                email: user.email,
+            });
             return res.status(401).json({ error: "Invalid email or password" });
         }
         // Create token
@@ -47,7 +68,15 @@ router.post("/login", async (req, res) => {
             organizationId: user.organizationId,
         }, JWT_SECRET, { expiresIn: "7d" });
         // Set cookie and return user info
-        res.cookie(TOKEN_COOKIE_NAME, token, getCookieOptions());
+        const cookieOptions = getCookieOptions();
+        res.cookie(TOKEN_COOKIE_NAME, token, cookieOptions);
+        console.log("[auth/login] success, cookie queued", {
+            userId: String(user._id),
+            email: user.email,
+            role: user.role,
+            cookieName: TOKEN_COOKIE_NAME,
+            cookieOptions,
+        });
         return res.status(200).json({
             message: "Login successful",
             user: {

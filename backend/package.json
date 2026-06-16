@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "node --env-file=.env --import tsx --watch src/server.ts",
+    "server": "npm run dev",
     "build": "tsc",
     "start": "node dist/server.js",
     "db:seed": "tsx --env-file=.env scripts/seed.ts"

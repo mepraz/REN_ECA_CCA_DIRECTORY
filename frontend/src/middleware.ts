@@ -12,6 +12,12 @@ const PUBLIC_API_PATHS = ["/api/auth/login", "/api/auth/logout", "/api/auth/seed
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(TOKEN_COOKIE_NAME)?.value;
+  const hasToken = Boolean(token);
+  console.log("[middleware] auth check", {
+    pathname,
+    hasToken,
+    isLoginPath: pathname === "/login",
+  });
 
   // Let static files, Next.js internal requests, and public assets bypass middleware
   if (
@@ -31,7 +37,7 @@ export function middleware(request: NextRequest) {
 
   // If request is for an API route
   if (isApiRoute) {
-    if (!token && !isPublicApiRoute) {
+    if (!hasToken && !isPublicApiRoute) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -41,16 +47,27 @@ export function middleware(request: NextRequest) {
   }
 
   // If user is NOT authenticated
-  if (!token) {
+  if (!hasToken) {
     if (!isPublicPath) {
+      console.warn("[middleware] redirecting unauthenticated request", {
+        pathname,
+        hasToken,
+      });
       // Redirect to login page and keep track of where they wanted to go
       const url = new URL("/login", request.url);
       url.searchParams.set("from", pathname);
-      return NextResponse.redirect(url);
+      
+      // Clear the invalid cookie so we don't carry it forward
+      const response = NextResponse.redirect(url);
+      response.cookies.delete(TOKEN_COOKIE_NAME);
+      return response;
     }
   } else {
     // If user IS authenticated and tries to access login page
     if (isPublicPath) {
+      console.log("[middleware] authenticated user on login, redirecting home", {
+        pathname,
+      });
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
@@ -61,13 +78,14 @@ export function middleware(request: NextRequest) {
 // See "Matching Paths" below to learn more
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (partially handled in middleware)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/",
+    "/login",
+    "/dashboard/:path*",
+    "/organizations/:path*",
+    "/events/:path*",
+    "/gallery/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+    "/api/:path*",
   ],
 };
