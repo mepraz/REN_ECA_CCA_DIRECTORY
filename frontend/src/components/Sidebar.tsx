@@ -51,7 +51,7 @@ export default function Sidebar({ userEmail, userRole }: SidebarProps) {
     },
     {
       name: "Users",
-      href: "/users",
+      href: "/dashboard/users",
       icon: Users,
       role: UserRole.MAIN_ADMIN,
     },

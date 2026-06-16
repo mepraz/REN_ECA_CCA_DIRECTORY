@@ -66,15 +66,27 @@ const UserSchema = new mongoose_1.Schema({
         required: true,
     },
     organizationId: {
-        type: String,
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "Organization",
         required: false,
     },
     isActive: {
         type: Boolean,
         default: true,
     },
+    lastLogin: {
+        type: Date,
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+    deletedAt: {
+        type: Date,
+    },
 }, {
     timestamps: true,
 });
+// Filter out deleted users by default on find queries if desired, but we can also handle this in the service layer.
 const User = mongoose_1.default.models.User || mongoose_1.default.model("User", UserSchema);
 exports.default = User;

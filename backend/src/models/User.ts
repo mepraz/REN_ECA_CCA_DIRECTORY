@@ -10,8 +10,11 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   role: UserRole;
-  organizationId?: string;
+  organizationId?: mongoose.Types.ObjectId;
   isActive: boolean;
+  lastLogin?: Date;
+  isDeleted: boolean;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,12 +46,23 @@ const UserSchema = new Schema<IUser>(
       required: true,
     },
     organizationId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
       required: false,
     },
     isActive: {
       type: Boolean,
       default: true,
+    },
+    lastLogin: {
+      type: Date,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
     },
   },
   {
@@ -56,6 +70,7 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
+// Filter out deleted users by default on find queries if desired, but we can also handle this in the service layer.
 const User: Model<IUser> =
   mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 
