@@ -4,7 +4,7 @@
   "description": "Express.js backend for Reliance Portal",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "node --env-file=.env --import tsx --watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "db:seed": "tsx --env-file=.env scripts/seed.ts"

@@ -1,9 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyToken } from "@/lib/auth";
-import LogoutButton from "@/components/LogoutButton";
-import { UserRole } from "@/lib/auth";
-import { Shield, Building, Activity } from "lucide-react";
+import Sidebar from "@/components/Sidebar";
+import { Shield, Building2, Award, Calendar, Image as ImageIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -20,116 +19,117 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const isAdmin = payload.role === UserRole.MAIN_ADMIN;
-
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans">
-      {/* Top Navigation Bar */}
-      <nav className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <Shield className="h-8 w-8 text-blue-500 mr-2" />
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                Reliance Portal
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-400 hidden sm:inline">
-                Welcome back, <strong className="text-white">{payload.email}</strong>
-              </span>
-              <LogoutButton />
-            </div>
+    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-800">
+      {/* Sidebar Navigation */}
+      <Sidebar userEmail={payload.email} userRole={payload.role} />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Header Bar */}
+        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 sticky top-0 z-40">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Reliance Portal</h1>
           </div>
-        </div>
-      </nav>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-slate-500">
+              Welcome back, <strong className="text-slate-800 font-semibold">{payload.email}</strong>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+              <Shield className="h-3.5 w-3.5" />
+              {payload.role}
+            </span>
+          </div>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Administrative Dashboard
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
-            Overview of the reliance ECA/CCA directory module configurations.
-          </p>
-        </div>
-
-        {/* Info Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 flex items-start gap-4">
-            <div className="p-3 bg-blue-500/10 rounded-lg text-blue-500">
-              <Shield className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-400">Current Role</p>
-              <p className="text-xl font-bold text-white mt-1">{payload.role}</p>
-              <p className="text-xs text-slate-500 mt-2">
-                {isAdmin
-                  ? "Access granted to all system features."
-                  : "Access restricted to college-specific operations."}
-              </p>
-            </div>
+        {/* Dashboard Dashboard View */}
+        <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
+          <div className="mb-8">
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">
+              Academic Management Dashboard
+            </h2>
+            <p className="mt-2 text-sm text-slate-500">
+              Overview of the Reliance ECA/CCA directory module configurations and activity.
+            </p>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 flex items-start gap-4">
-            <div className="p-3 bg-indigo-500/10 rounded-lg text-indigo-500">
-              <Building className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-400">Organization ID</p>
-              <p className="text-xl font-bold text-white mt-1">
-                {payload.organizationId || "System Level"}
-              </p>
-              <p className="text-xs text-slate-500 mt-2">
-                {isAdmin ? "Global administrative rights." : "Scoped to organization resource."}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 flex items-start gap-4">
-            <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-500">
-              <Activity className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-400">Status</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xl font-bold text-white">Active</span>
+          {/* Analytics Cards (BankDash/UI Design Guide Style: Rounded 24px) */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            {/* Total Events */}
+            <div className="bg-white border border-slate-200/80 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-400">Total Events</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">124</p>
               </div>
-              <p className="text-xs text-slate-500 mt-2">
-                Session established successfully via secure JWT.
-              </p>
+              <div className="p-4 bg-blue-50 rounded-2xl text-blue-600">
+                <Calendar className="h-6 w-6" />
+              </div>
+            </div>
+
+            {/* Organizations */}
+            <div className="bg-white border border-slate-200/80 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-400">Organizations</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">12</p>
+              </div>
+              <div className="p-4 bg-indigo-50 rounded-2xl text-indigo-600">
+                <Building2 className="h-6 w-6" />
+              </div>
+            </div>
+
+            {/* Images */}
+            <div className="bg-white border border-slate-200/80 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-400">Images</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">2,540</p>
+              </div>
+              <div className="p-4 bg-emerald-50 rounded-2xl text-emerald-600">
+                <ImageIcon className="h-6 w-6" />
+              </div>
+            </div>
+
+            {/* Winners */}
+            <div className="bg-white border border-slate-200/80 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-400">Winners</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">430</p>
+              </div>
+              <div className="p-4 bg-amber-50 rounded-2xl text-amber-600">
+                <Award className="h-6 w-6" />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Quick Actions / Configuration Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-8">
-          <h2 className="text-xl font-bold text-white mb-4">Module 1 Setup Successful</h2>
-          <p className="text-slate-300 text-sm mb-6 max-w-2xl leading-relaxed">
-            The authentication layer, database connection, User models, seed script, API routes,
-            middleware protection, and authorization configurations are fully established. You can
-            use these structures to begin building ECA/CCA features.
-          </p>
-          <div className="border border-dashed border-slate-800 rounded-lg p-4 bg-slate-950/50">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-              System Configuration Status
-            </h3>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li className="flex items-center gap-2">
-                <span className="text-emerald-500">✓</span> Database: Connected
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-emerald-500">✓</span> Auth Session: Verified HTTP-Only Cookie
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-emerald-500">✓</span> Authorization Helpers: Active
-              </li>
-            </ul>
+          {/* Quick Actions / Configuration Card */}
+          <div className="bg-white border border-slate-200 rounded-[24px] p-8 shadow-sm">
+            <h3 className="text-xl font-bold text-slate-900 mb-4">Module Setup Successful</h3>
+            <p className="text-slate-600 text-sm mb-6 max-w-3xl leading-relaxed">
+              The Express.js authentication layer, database connection, organization routing, 
+              middleware protection, and authorization configurations are fully established. 
+              You can navigate to the **Organizations** page using the sidebar to manage colleges.
+            </p>
+            <div className="border border-dashed border-slate-200 rounded-2xl p-6 bg-slate-50/50">
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                System Status
+              </h4>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Database: <strong className="text-slate-800 font-semibold">Connected (MongoDB)</strong>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Auth Session: <strong className="text-slate-800 font-semibold">Verified HTTP-Only Cookie</strong>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Role-Based Access: <strong className="text-slate-800 font-semibold">Active</strong>
+                </li>
+              </ul>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

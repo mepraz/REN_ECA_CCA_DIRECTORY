@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { dbConnect } from "./lib/mongodb.js";
 import authRoutes from "./routes/auth.js";
+import organizationRoutes from "./routes/organization.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +26,7 @@ dbConnect().catch((err) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/organizations", organizationRoutes);
 
 // Health check route
 app.get("/health", (req, res) => {
