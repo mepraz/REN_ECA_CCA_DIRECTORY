@@ -106,35 +106,7 @@ export default async function DashboardPage() {
               </div>
             </div>
           </div>
-
-          {/* Quick Actions / Configuration Card */}
-          <div className="bg-white border border-slate-200 rounded-[24px] p-8 shadow-sm">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Module Setup Successful</h3>
-            <p className="text-slate-600 text-sm mb-6 max-w-3xl leading-relaxed">
-              The Express.js authentication layer, database connection, organization routing, 
-              middleware protection, and authorization configurations are fully established. 
-              You can navigate to the **Organizations** page using the sidebar to manage colleges.
-            </p>
-            <div className="border border-dashed border-slate-200 rounded-2xl p-6 bg-slate-50/50">
-              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                System Status
-              </h4>
-              <ul className="space-y-3 text-sm text-slate-600">
-                <li className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Database: <strong className="text-slate-800 font-semibold">Connected (MongoDB)</strong>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Auth Session: <strong className="text-slate-800 font-semibold">Verified HTTP-Only Cookie</strong>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Role-Based Access: <strong className="text-slate-800 font-semibold">Active</strong>
-                </li>
-              </ul>
-            </div>
-          </div>
+          {/* Content removed as requested */}
         </main>
       </div>
     </div>

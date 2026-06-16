@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Calendar,
@@ -23,7 +23,6 @@ interface SidebarProps {
 
 export default function Sidebar({ userEmail, userRole }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const handleLogout = async () => {
     try {
@@ -31,8 +30,7 @@ export default function Sidebar({ userEmail, userRole }: SidebarProps) {
         method: "POST",
       });
       if (res.ok) {
-        router.push("/login");
-        router.refresh();
+        window.location.href = "/login";
       }
     } catch (error) {
       console.error("Logout error:", error);
@@ -84,11 +82,10 @@ export default function Sidebar({ userEmail, userRole }: SidebarProps) {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                isActive
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
                   ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              }`}
+                }`}
             >
               <Icon className="h-5 w-5 shrink-0" />
               <span>{item.name}</span>
