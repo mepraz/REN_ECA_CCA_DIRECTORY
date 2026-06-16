@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, Geist_Mono } from "next/font/google";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 const sansFont = Outfit({
@@ -27,7 +28,10 @@ export default function RootLayout({
       lang="en"
       className={`${sansFont.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-slate-50">{children}</body>
+      <body className="min-h-full flex flex-col font-sans bg-slate-50">
+        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+        {children}
+      </body>
     </html>
   );
 }

@@ -10,7 +10,6 @@ import {
   ToggleRight,
   Loader2,
   AlertCircle,
-  CheckCircle2,
   MapPin,
   Mail,
   User,
@@ -19,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { toast } from "react-hot-toast";
 
 interface OrgAdmin {
   _id: string;
@@ -41,8 +41,6 @@ interface OrganizationData {
 export default function OrganizationsManager() {
   const [organizations, setOrganizations] = useState<OrganizationData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modal states
@@ -84,10 +82,9 @@ export default function OrganizationsManager() {
       }
       const data = await res.json();
       setOrganizations(data);
-      setError(null);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Something went wrong";
-      setError(errorMsg || "Something went wrong while loading organizations.");
+      toast.error(errorMsg || "Something went wrong while loading organizations.");
     } finally {
       setLoading(false);
     }
@@ -105,12 +102,11 @@ export default function OrganizationsManager() {
         const data = await res.json();
         if (active) {
           setOrganizations(data);
-          setError(null);
         }
       } catch (err: unknown) {
         if (active) {
           const errorMsg = err instanceof Error ? err.message : "Something went wrong";
-          setError(errorMsg || "Something went wrong while loading organizations.");
+          toast.error(errorMsg || "Something went wrong while loading organizations.");
         }
       } finally {
         if (active) {
@@ -141,7 +137,7 @@ export default function OrganizationsManager() {
         throw new Error(data.error || "Failed to create organization");
       }
 
-      setSuccess("Organization and Admin created successfully!");
+      toast.success("Organization and Admin created successfully!");
       setCreateModalOpen(false);
       setCreateForm({
         name: "",
@@ -152,10 +148,10 @@ export default function OrganizationsManager() {
         password: "",
       });
       refreshOrganizations();
-      setTimeout(() => setSuccess(null), 4000);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Something went wrong";
       setFormError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setFormLoading(false);
     }
@@ -179,14 +175,14 @@ export default function OrganizationsManager() {
         throw new Error(data.error || "Failed to update organization");
       }
 
-      setSuccess("Organization details updated successfully!");
+      toast.success("Organization details updated successfully!");
       setEditModalOpen(false);
       setSelectedOrg(null);
       refreshOrganizations();
-      setTimeout(() => setSuccess(null), 4000);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Something went wrong";
       setFormError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setFormLoading(false);
     }
@@ -210,14 +206,14 @@ export default function OrganizationsManager() {
         throw new Error(data.error || "Failed to reset password");
       }
 
-      setSuccess(`Password for ${selectedOrg.adminId?.name || "Admin"} has been reset successfully!`);
+      toast.success(`Password for ${selectedOrg.adminId?.name || "Admin"} has been reset successfully!`);
       setPasswordModalOpen(false);
       setPasswordForm({ password: "" });
       setSelectedOrg(null);
-      setTimeout(() => setSuccess(null), 4000);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Something went wrong";
       setFormError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setFormLoading(false);
     }
@@ -234,13 +230,11 @@ export default function OrganizationsManager() {
         throw new Error(data.error || "Failed to update status");
       }
 
-      setSuccess(`Organization "${org.name}" status updated successfully!`);
+      toast.success(`Organization "${org.name}" status updated successfully!`);
       refreshOrganizations();
-      setTimeout(() => setSuccess(null), 4000);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Something went wrong";
-      setError(errorMsg || "Failed to update status.");
-      setTimeout(() => setError(null), 4000);
+      toast.error(errorMsg || "Failed to update status.");
     }
   };
 
@@ -273,14 +267,14 @@ export default function OrganizationsManager() {
   return (
     <div className="space-y-6">
       {/* Search and Add Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-6 rounded-[24px] border border-slate-200/80 shadow-sm transition-all duration-300 hover:shadow-md">
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-3.5 h-4.5 w-4.5 text-slate-400" />
           <Input
             placeholder="Search by college name, address, or admin..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-11 bg-slate-50 border-slate-200 focus:border-blue-500 rounded-xl"
+            className="pl-10 h-11 bg-slate-50 border-slate-200 focus:border-blue-500 rounded-xl transition-all duration-200"
           />
         </div>
         <Button
@@ -288,27 +282,12 @@ export default function OrganizationsManager() {
             setFormError(null);
             setCreateModalOpen(true);
           }}
-          className="w-full sm:w-auto h-11 bg-blue-600 hover:bg-blue-500 text-white px-6 rounded-xl flex items-center gap-2"
+          className="w-full sm:w-auto h-11 bg-blue-600 hover:bg-blue-500 text-white px-6 rounded-xl flex items-center gap-2 transition-all duration-200 active:scale-[0.98] cursor-pointer"
         >
           <Plus className="h-5 w-5" />
           Add Organization
         </Button>
       </div>
-
-      {/* Message Alerts */}
-      {success && (
-        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl shadow-sm animate-pulse">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-          <span className="text-sm font-semibold">{success}</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl shadow-sm">
-          <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
-          <span className="text-sm font-semibold">{error}</span>
-        </div>
-      )}
 
       {/* Main Grid / Data Table (BankDash Style) */}
       <div className="bg-white border border-slate-200/80 rounded-[24px] overflow-hidden shadow-sm">
