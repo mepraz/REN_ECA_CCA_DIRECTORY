@@ -9,6 +9,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_js_1 = __importDefault(require("../models/User.js"));
 const router = (0, express_1.Router)();
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development_change_it_immediately";
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || JWT_SECRET;
 const TOKEN_COOKIE_NAME = "auth_token";
 const getCookieOptions = () => {
     return {
@@ -60,13 +61,18 @@ router.post("/login", async (req, res) => {
             });
             return res.status(401).json({ error: "Invalid email or password" });
         }
-        // Create token
-        const token = jsonwebtoken_1.default.sign({
+        const tokenPayload = {
             userId: String(user._id),
             email: user.email,
             role: user.role,
             organizationId: user.organizationId,
-        }, JWT_SECRET, { expiresIn: "7d" });
+        };
+        // Create tokens
+        const token = jsonwebtoken_1.default.sign(tokenPayload, JWT_SECRET, { expiresIn: "7d" });
+        const refreshToken = jsonwebtoken_1.default.sign({
+            ...tokenPayload,
+            tokenType: "refresh",
+        }, REFRESH_TOKEN_SECRET, { expiresIn: "30d" });
         // Set cookie and return user info
         const cookieOptions = getCookieOptions();
         res.cookie(TOKEN_COOKIE_NAME, token, cookieOptions);
@@ -79,8 +85,13 @@ router.post("/login", async (req, res) => {
         });
         return res.status(200).json({
             message: "Login successful",
+            jwt: token,
+            refreshToken,
+            tokenType: "Bearer",
+            expiresIn: "7d",
+            refreshTokenExpiresIn: "30d",
             user: {
-                id: user._id,
+                id: String(user._id),
                 name: user.name,
                 email: user.email,
                 role: user.role,
