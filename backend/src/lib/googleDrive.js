@@ -1,13 +1,10 @@
 import { Readable } from "stream";
 import { google } from "googleapis";
-
 const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
-
-const getGoogleErrorMessage = (error: any) => {
+const getGoogleErrorMessage = (error) => {
   const status = error?.code || error?.response?.status;
   const reason = error?.errors?.[0]?.reason || error?.response?.data?.error;
   const message = error?.message || "Google Drive request failed";
-
   if (status === 401 || reason === "invalid_grant") {
     return "Google Drive refresh token is invalid or expired. Reconnect from /api/google/auth.";
   }
@@ -20,135 +17,116 @@ const getGoogleErrorMessage = (error: any) => {
   if (status === 404) {
     return "Google Drive folder was not found. Check GOOGLE_DRIVE_FOLDER_ID and make sure the connected Google account can access it.";
   }
-
   return message;
 };
-
 const getOAuthClient = () => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const redirectUri = process.env.GOOGLE_REDIRECT_URI;
-
   if (!clientId || !clientSecret || !redirectUri) {
     throw new Error("Google OAuth env is not configured");
   }
-
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 };
-
-export const isDriveUploadConfigured = () => {
+const isDriveUploadConfigured = () => {
   return Boolean(
-    process.env.GOOGLE_CLIENT_ID &&
-      process.env.GOOGLE_CLIENT_SECRET &&
-      process.env.GOOGLE_REDIRECT_URI &&
-      process.env.GOOGLE_DRIVE_FOLDER_ID &&
-      process.env.GOOGLE_REFRESH_TOKEN
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REDIRECT_URI && process.env.GOOGLE_DRIVE_FOLDER_ID && process.env.GOOGLE_REFRESH_TOKEN
   );
 };
-
-export const getGoogleAuthUrl = (state: string) => {
+const getGoogleAuthUrl = (state) => {
   const oauth2Client = getOAuthClient();
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
     scope: [DRIVE_FILE_SCOPE],
-    state,
+    state
   });
 };
-
-export const exchangeCodeForRefreshToken = async (code: string) => {
+const exchangeCodeForRefreshToken = async (code) => {
   const oauth2Client = getOAuthClient();
   const { tokens } = await oauth2Client.getToken(code);
-
   if (!tokens.refresh_token) {
     throw new Error("Google did not return a refresh token. Revoke app access and try again.");
   }
-
   return tokens.refresh_token;
 };
-
-export const uploadImageToDrive = async (file: Express.Multer.File) => {
+const uploadImageToDrive = async (file) => {
   if (!isDriveUploadConfigured()) {
     throw new Error("Google Drive upload is not configured");
   }
-
   const oauth2Client = getOAuthClient();
   oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
-
   const drive = google.drive({ version: "v3", auth: oauth2Client });
   try {
     const created = await drive.files.create({
       requestBody: {
         name: file.filename,
-        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID as string],
+        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID]
       },
       media: {
         mimeType: file.mimetype,
-        body: Readable.from(file.buffer),
+        body: Readable.from(file.buffer)
       },
       fields: "id,name,mimeType,size,webViewLink,webContentLink",
-      supportsAllDrives: true,
+      supportsAllDrives: true
     });
-
     const fileId = created.data.id;
     if (!fileId) {
       throw new Error("Google Drive did not return a file id");
     }
-
     await drive.permissions.create({
       fileId,
       requestBody: {
         role: "reader",
-        type: "anyone",
+        type: "anyone"
       },
-      supportsAllDrives: true,
+      supportsAllDrives: true
     });
-
     const uploaded = await drive.files.get({
       fileId,
       fields: "id,name,mimeType,size,webViewLink,webContentLink",
-      supportsAllDrives: true,
+      supportsAllDrives: true
     });
-
     return {
       driveFileId: fileId,
       driveWebViewLink: uploaded.data.webViewLink,
       driveWebContentLink: uploaded.data.webContentLink,
-      url: `https://drive.google.com/uc?export=view&id=${fileId}`,
+      url: `https://drive.google.com/uc?export=view&id=${fileId}`
     };
-  } catch (error: any) {
+  } catch (error) {
     throw new Error(getGoogleErrorMessage(error));
   }
 };
-
-export const getDriveUploadFolder = async () => {
+const getDriveUploadFolder = async () => {
   if (!isDriveUploadConfigured()) {
     throw new Error("Google Drive upload is not configured");
   }
-
   const oauth2Client = getOAuthClient();
   oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
-
   const drive = google.drive({ version: "v3", auth: oauth2Client });
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID as string;
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
   let folder;
   try {
     folder = await drive.files.get({
       fileId: folderId,
       fields: "id,name,mimeType,webViewLink,capabilities(canAddChildren)",
-      supportsAllDrives: true,
+      supportsAllDrives: true
     });
-  } catch (error: any) {
+  } catch (error) {
     throw new Error(getGoogleErrorMessage(error));
   }
-
   if (folder.data.mimeType !== "application/vnd.google-apps.folder") {
     throw new Error("GOOGLE_DRIVE_FOLDER_ID does not point to a Google Drive folder");
   }
-
   if (folder.data.capabilities?.canAddChildren === false) {
     throw new Error("The connected Google account cannot add files to this Drive folder");
   }
-
   return folder.data;
+};
+export {
+  exchangeCodeForRefreshToken,
+  getDriveUploadFolder,
+  getGoogleAuthUrl,
+  isDriveUploadConfigured,
+  uploadImageToDrive
 };

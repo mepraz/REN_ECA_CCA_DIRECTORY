@@ -73,7 +73,7 @@ export default function EventForm({ mode, role, eventId }: EventFormProps) {
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const res = await fetch("/api/events/organizations");
+        const res = await fetch("/api/events/organizations", { credentials: "include" });
         if (!res.ok) throw new Error("Failed to load organizations");
         const data = await res.json();
         setOrganizations(data);
@@ -91,7 +91,7 @@ export default function EventForm({ mode, role, eventId }: EventFormProps) {
     if (mode !== "edit" || !eventId) return;
     const loadEvent = async () => {
       try {
-        const res = await fetch(`/api/events/${eventId}`);
+        const res = await fetch(`/api/events/${eventId}`, { credentials: "include" });
         const data: EventRecord | { error?: string } = await res.json();
         if (!res.ok) throw new Error("error" in data ? data.error : "Failed to load event");
         const event = data as EventRecord;
@@ -163,6 +163,7 @@ export default function EventForm({ mode, role, eventId }: EventFormProps) {
 
       const res = await fetch(mode === "edit" ? `/api/events/${eventId}` : "/api/events", {
         method: mode === "edit" ? "PUT" : "POST",
+        credentials: "include",
         body,
       });
       if (!res.ok) throw new Error(await readSaveError(res));
@@ -207,7 +208,7 @@ export default function EventForm({ mode, role, eventId }: EventFormProps) {
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl gap-2">
+        <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl gap-2">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           {saving ? "Saving..." : "Save Event"}
         </Button>

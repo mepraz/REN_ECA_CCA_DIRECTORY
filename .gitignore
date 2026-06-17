@@ -1,1 +1,21 @@
-node_modules
+node_modules/
+**/node_modules/
+
+# env
+.env
+.env.*
+!.env.example
+
+# backend runtime/generated output
+backend/dist/
+backend/uploads/
+uploads/
+
+# frontend build output
+frontend/.next/
+frontend/out/
+
+# logs and caches
+*.log
+coverage/
+*.tsbuildinfo

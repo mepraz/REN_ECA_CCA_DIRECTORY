@@ -1,42 +1,38 @@
-import { Router, Response } from "express";
+import { Router } from "express";
 import jwt from "jsonwebtoken";
-import { authenticateUser, AuthenticatedRequest, requireRole } from "../middleware/auth.js";
+import { authenticateUser, requireRole } from "../middleware/auth.js";
 import { UserRole } from "../models/User.js";
 import {
   exchangeCodeForRefreshToken,
   getDriveUploadFolder,
   getGoogleAuthUrl,
-  isDriveUploadConfigured,
+  isDriveUploadConfigured
 } from "../lib/googleDrive.js";
 import { updateEnvFileValue } from "../lib/envFile.js";
-
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development_change_it_immediately";
-
 router.get(
   "/auth",
-  authenticateUser as any,
-  requireRole([UserRole.MAIN_ADMIN]) as any,
-  (req: AuthenticatedRequest, res: Response): any => {
+  authenticateUser,
+  requireRole([UserRole.MAIN_ADMIN]),
+  (req, res) => {
     try {
       const state = jwt.sign(
         {
           userId: req.user?.userId,
-          purpose: "google-drive-oauth",
+          purpose: "google-drive-oauth"
         },
         JWT_SECRET,
         { expiresIn: "10m" }
       );
-
       return res.redirect(getGoogleAuthUrl(state));
-    } catch (error: any) {
+    } catch (error) {
       console.error("Google auth URL error:", error);
       return res.status(400).json({ error: error.message || "Unable to start Google OAuth" });
     }
   }
 );
-
-router.get("/callback", async (req, res): Promise<any> => {
+router.get("/callback", async (req, res) => {
   try {
     const { code, state, error } = req.query;
     if (error) {
@@ -64,15 +60,12 @@ router.get("/callback", async (req, res): Promise<any> => {
     if (!state || typeof state !== "string") {
       return res.status(400).json({ error: "Missing Google OAuth state" });
     }
-
-    const decoded = jwt.verify(state, JWT_SECRET) as { purpose?: string };
+    const decoded = jwt.verify(state, JWT_SECRET);
     if (decoded.purpose !== "google-drive-oauth") {
       return res.status(400).json({ error: "Invalid Google OAuth state" });
     }
-
     const refreshToken = await exchangeCodeForRefreshToken(code);
     updateEnvFileValue("GOOGLE_REFRESH_TOKEN", refreshToken);
-
     return res.status(200).send(`
       <html>
         <body style="font-family: system-ui, sans-serif; padding: 32px;">
@@ -81,29 +74,26 @@ router.get("/callback", async (req, res): Promise<any> => {
         </body>
       </html>
     `);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Google callback error:", error);
     return res.status(400).json({ error: error.message || "Unable to complete Google OAuth" });
   }
 });
-
 router.get(
   "/status",
-  authenticateUser as any,
-  requireRole([UserRole.MAIN_ADMIN]) as any,
-  async (_req: AuthenticatedRequest, res: Response): Promise<any> => {
+  authenticateUser,
+  requireRole([UserRole.MAIN_ADMIN]),
+  async (_req, res) => {
     const configured = isDriveUploadConfigured();
-    let folder: Awaited<ReturnType<typeof getDriveUploadFolder>> | null = null;
-    let folderError: string | null = null;
-
+    let folder = null;
+    let folderError = null;
     if (configured) {
       try {
         folder = await getDriveUploadFolder();
-      } catch (error: any) {
+      } catch (error) {
         folderError = error.message || "Unable to access Google Drive folder";
       }
     }
-
     return res.status(200).json({
       configured,
       hasClientId: Boolean(process.env.GOOGLE_CLIENT_ID),
@@ -111,17 +101,14 @@ router.get(
       hasRedirectUri: Boolean(process.env.GOOGLE_REDIRECT_URI),
       hasFolderId: Boolean(process.env.GOOGLE_DRIVE_FOLDER_ID),
       hasRefreshToken: Boolean(process.env.GOOGLE_REFRESH_TOKEN),
-      folder: folder
-        ? {
-            id: folder.id,
-            name: folder.name,
-            webViewLink: folder.webViewLink,
-            canAddChildren: folder.capabilities?.canAddChildren,
-          }
-        : null,
-      folderError,
+      folder: folder ? {
+        id: folder.id,
+        name: folder.name,
+        webViewLink: folder.webViewLink,
+        canAddChildren: folder.capabilities?.canAddChildren
+      } : null,
+      folderError
     });
   }
 );
-
 export default router;
