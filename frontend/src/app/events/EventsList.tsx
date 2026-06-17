@@ -17,7 +17,7 @@ export default function EventsList() {
     setLoading(true);
     try {
       const query = search ? `?search=${encodeURIComponent(search)}` : "";
-      const res = await fetch(`/api/events${query}`);
+      const res = await fetch(`/api/events${query}`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load events");
       setEvents(data);
@@ -36,7 +36,7 @@ export default function EventsList() {
   const deleteEvent = async (eventId: string) => {
     if (!window.confirm("Delete this event from the directory?")) return;
     try {
-      const res = await fetch(`/api/events/${eventId}`, { method: "DELETE" });
+      const res = await fetch(`/api/events/${eventId}`, { method: "DELETE", credentials: "include" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to delete event");
       toast.success("Event deleted");
