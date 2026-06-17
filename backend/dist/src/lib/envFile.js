@@ -7,12 +7,12 @@ exports.updateEnvFileValue = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const getBackendEnvPath = () => {
-    const cwdBackendEnv = path_1.default.join(process.cwd(), ".env");
     const nestedBackendEnv = path_1.default.join(process.cwd(), "backend", ".env");
-    if (fs_1.default.existsSync(cwdBackendEnv))
-        return cwdBackendEnv;
+    const cwdBackendEnv = path_1.default.join(process.cwd(), ".env");
     if (fs_1.default.existsSync(nestedBackendEnv))
         return nestedBackendEnv;
+    if (fs_1.default.existsSync(cwdBackendEnv))
+        return cwdBackendEnv;
     return cwdBackendEnv;
 };
 const updateEnvFileValue = (key, value, envPath = getBackendEnvPath()) => {
