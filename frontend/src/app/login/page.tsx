@@ -30,9 +30,12 @@ function LoginForm() {
       setLoading(false);
       return;
     }
+    const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (!backend)
+      throw new Error("NEXT_PUBLIC_BACKEND_URL is not defined");
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${backend}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

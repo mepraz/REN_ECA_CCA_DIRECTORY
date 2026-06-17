@@ -24,9 +24,13 @@ interface SidebarProps {
 export default function Sidebar({ userEmail, userRole }: SidebarProps) {
   const pathname = usePathname();
 
+  const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (!backend)
+    throw new Error("NEXT_PUBLIC_BACKEND_URL is not defined");
+
   const handleLogout = async () => {
     try {
-      const res = await fetch("/api/auth/logout", {
+      const res = await fetch(`${backend}/api/auth/logout`, {
         method: "POST",
       });
       if (res.ok) {
@@ -83,8 +87,8 @@ export default function Sidebar({ userEmail, userRole }: SidebarProps) {
               key={item.name}
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
             >
               <Icon className="h-5 w-5 shrink-0" />
