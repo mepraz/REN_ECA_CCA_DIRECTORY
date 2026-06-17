@@ -14,6 +14,7 @@ interface PendingImage {
   file: File;
   category: EventImageCategory;
   label: string;
+  preview: string;
 }
 
 interface EventFormProps {
@@ -130,6 +131,7 @@ export default function EventForm({ mode, role, eventId }: EventFormProps) {
       file,
       category: "other" as EventImageCategory,
       label: "",
+      preview: URL.createObjectURL(file),
     }));
     setPendingImages((current) => [...current, ...nextImages]);
   };
@@ -141,7 +143,13 @@ export default function EventForm({ mode, role, eventId }: EventFormProps) {
   };
 
   const removePendingImage = (index: number) => {
-    setPendingImages((current) => current.filter((_, imageIndex) => imageIndex !== index));
+    setPendingImages((current) => {
+      const target = current[index];
+      if (target?.preview) {
+        URL.revokeObjectURL(target.preview);
+      }
+      return current.filter((_, imageIndex) => imageIndex !== index);
+    });
   };
 
   const removeExistingImage = (imageId: string) => {
@@ -378,12 +386,20 @@ export default function EventForm({ mode, role, eventId }: EventFormProps) {
         {pendingImages.length > 0 && (
           <div className="space-y-3">
             {pendingImages.map((image, index) => (
-              <div key={`${image.file.name}-${index}`} className="grid grid-cols-1 md:grid-cols-[1fr_160px_1fr_auto] gap-3 items-center border border-slate-200 rounded-xl p-3">
+              <div key={`${image.file.name}-${index}`} className="grid grid-cols-1 md:grid-cols-[64px_1fr_160px_1fr_auto] gap-3 items-center border border-slate-200 rounded-xl p-3">
+                <div className="h-12 w-16 relative rounded-lg overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={image.preview}
+                    alt={image.file.name}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
                 <p className="text-sm font-medium text-slate-700 truncate">{image.file.name}</p>
                 <select
                   value={image.category}
                   onChange={(event) => updatePendingImage(index, { category: event.target.value as EventImageCategory })}
-                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm animate-none"
                 >
                   {categories.map((category) => (
                     <option key={category.value} value={category.value}>{category.label}</option>
@@ -395,7 +411,7 @@ export default function EventForm({ mode, role, eventId }: EventFormProps) {
                   placeholder="Optional label"
                   className="rounded-xl border-slate-200"
                 />
-                <button type="button" onClick={() => removePendingImage(index)} className="p-2 rounded-lg text-red-500 hover:bg-red-50">
+                <button type="button" onClick={() => removePendingImage(index)} className="p-2 rounded-lg text-red-500 hover:bg-red-50 cursor-pointer">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>

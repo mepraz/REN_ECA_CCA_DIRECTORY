@@ -8,7 +8,7 @@ import { authenticateUser, requireRole } from "../middleware/auth.js";
 import Event, { EventImageCategory } from "../models/Event.js";
 import Organization from "../models/Organization.js";
 import { UserRole } from "../models/User.js";
-import { isDriveUploadConfigured, uploadImageToDrive } from "../lib/googleDrive.js";
+import { isDriveUploadConfigured, uploadImageToDrive, getOrCreateOrganizationFolder, getOrCreateSubfolder, deleteImageFromDrive } from "../lib/googleDrive.js";
 import { getEventUploadRoot } from "../lib/uploadPath.js";
 const router = Router();
 const MAX_IMAGE_SIZE = Number(process.env.EVENT_IMAGE_MAX_BYTES || 5 * 1024 * 1024);
@@ -81,7 +81,7 @@ const saveLocalUpload = (file) => {
     url: `/uploads/events/${filename}`
   };
 };
-const buildImageRecords = async (files = [], meta = []) => {
+const buildImageRecords = async (files = [], meta = [], parentFolderId = null) => {
   const useDrive = isDriveUploadConfigured();
   const warnings = [];
   const images = await Promise.all(
@@ -96,7 +96,7 @@ const buildImageRecords = async (files = [], meta = []) => {
       let driveFile = null;
       if (useDrive) {
         try {
-          driveFile = await uploadImageToDrive({ ...file, filename: localFile.filename });
+          driveFile = await uploadImageToDrive({ ...file, filename: localFile.filename }, parentFolderId);
         } catch (error) {
           warnings.push(
             `Saved ${file.originalname} locally, but Google Drive upload failed: ${error.message || "Drive upload failed"}`
@@ -249,9 +249,19 @@ router.post(
         return res.status(400).json({ error: "Program name, date, and nature are required" });
       }
       const createdBy = getAuthenticatedUserId(req);
+      let parentFolderId = null;
+      if (isDriveUploadConfigured()) {
+        try {
+          const orgFolderId = await getOrCreateOrganizationFolder(organization.name);
+          parentFolderId = await getOrCreateSubfolder(programName, orgFolderId);
+        } catch (error) {
+          console.error("Failed to resolve Google Drive folders:", error);
+        }
+      }
       const imageResult = await buildImageRecords(
         req.files || [],
-        parseImageMeta(req.body.imageMeta)
+        parseImageMeta(req.body.imageMeta),
+        parentFolderId
       );
       const event = new Event({
         organizationId,
@@ -288,11 +298,27 @@ router.put(
       const oldOrganizationId = String(event.organizationId);
       const oldImageCount = event.images.length;
       const nextOrganizationId = await resolveOrganizationId(req, req.body.organizationId || oldOrganizationId);
+      const organization = await Organization.findById(nextOrganizationId);
+      if (!organization) {
+        return res.status(400).json({ error: "Organization not found" });
+      }
       const keepImageIds = typeof req.body.keepImageIds === "string" ? new Set(JSON.parse(req.body.keepImageIds)) : null;
       const retainedImages = keepImageIds ? event.images.filter((image) => image._id && keepImageIds.has(String(image._id))) : event.images;
+      const discardedImages = event.images.filter((image) => !retainedImages.some((r) => String(r._id) === String(image._id)));
+      let parentFolderId = null;
+      if (isDriveUploadConfigured()) {
+        try {
+          const orgFolderId = await getOrCreateOrganizationFolder(organization.name);
+          const nextProgramName = req.body.programName || event.programName;
+          parentFolderId = await getOrCreateSubfolder(nextProgramName, orgFolderId);
+        } catch (error) {
+          console.error("Failed to resolve Google Drive folders:", error);
+        }
+      }
       const imageResult = await buildImageRecords(
         req.files || [],
-        parseImageMeta(req.body.imageMeta)
+        parseImageMeta(req.body.imageMeta),
+        parentFolderId
       );
       const updatedBy = getAuthenticatedUserId(req);
       event.organizationId = new mongoose.Types.ObjectId(nextOrganizationId);
@@ -306,6 +332,14 @@ router.put(
       event.images = [...retainedImages, ...imageResult.images];
       event.updatedBy = updatedBy;
       await event.save();
+      if (isDriveUploadConfigured() && discardedImages.length > 0) {
+        const driveFileIds = discardedImages.map((img) => img.driveFileId).filter(Boolean);
+        if (driveFileIds.length > 0) {
+          Promise.allSettled(driveFileIds.map(deleteImageFromDrive)).then((results) => {
+            console.log("Background delete of discarded images from Google Drive completed:", results);
+          });
+        }
+      }
       if (oldOrganizationId !== nextOrganizationId) {
         await Organization.findByIdAndUpdate(oldOrganizationId, {
           $inc: { totalEvents: -1, totalImages: -oldImageCount }
@@ -335,6 +369,14 @@ router.delete("/:id", async (req, res) => {
     event.deletedAt = /* @__PURE__ */ new Date();
     event.deletedBy = getAuthenticatedUserId(req);
     await event.save();
+    if (isDriveUploadConfigured() && event.images.length > 0) {
+      const driveFileIds = event.images.map((img) => img.driveFileId).filter(Boolean);
+      if (driveFileIds.length > 0) {
+        Promise.allSettled(driveFileIds.map(deleteImageFromDrive)).then((results) => {
+          console.log("Background delete of all event images from Google Drive completed:", results);
+        });
+      }
+    }
     await Organization.findByIdAndUpdate(event.organizationId, {
       $inc: { totalEvents: -1, totalImages: -event.images.length }
     });

@@ -50,7 +50,34 @@ const exchangeCodeForRefreshToken = async (code) => {
   }
   return tokens.refresh_token;
 };
-const uploadImageToDrive = async (file) => {
+const getOrCreateFolder = async (drive, folderName, parentId) => {
+  try {
+    const response = await drive.files.list({
+      q: `name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and '${parentId}' in parents and trashed = false`,
+      fields: "files(id, name)",
+      spaces: "drive",
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true
+    });
+    if (response.data.files && response.data.files.length > 0) {
+      return response.data.files[0].id;
+    }
+    const folder = await drive.files.create({
+      requestBody: {
+        name: folderName,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [parentId]
+      },
+      fields: "id",
+      supportsAllDrives: true
+    });
+    return folder.data.id;
+  } catch (error) {
+    throw new Error(`Failed to get or create folder '${folderName}': ${error.message}`);
+  }
+};
+
+const uploadImageToDrive = async (file, parentFolderId = null) => {
   if (!isDriveUploadConfigured()) {
     throw new Error("Google Drive upload is not configured");
   }
@@ -58,10 +85,11 @@ const uploadImageToDrive = async (file) => {
   oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
   const drive = google.drive({ version: "v3", auth: oauth2Client });
   try {
+    const targetFolderId = parentFolderId || process.env.GOOGLE_DRIVE_FOLDER_ID;
     const created = await drive.files.create({
       requestBody: {
         name: file.filename,
-        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID]
+        parents: [targetFolderId]
       },
       media: {
         mimeType: file.mimetype,
@@ -97,6 +125,51 @@ const uploadImageToDrive = async (file) => {
     throw new Error(getGoogleErrorMessage(error));
   }
 };
+
+const getOrCreateOrganizationFolder = async (organizationName) => {
+  if (!isDriveUploadConfigured()) {
+    throw new Error("Google Drive upload is not configured");
+  }
+  const oauth2Client = getOAuthClient();
+  oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+  const drive = google.drive({ version: "v3", auth: oauth2Client });
+  const rootFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  try {
+    return await getOrCreateFolder(drive, organizationName, rootFolderId);
+  } catch (error) {
+    throw new Error(getGoogleErrorMessage(error));
+  }
+};
+
+const getOrCreateSubfolder = async (folderName, parentFolderId) => {
+  if (!isDriveUploadConfigured()) {
+    throw new Error("Google Drive upload is not configured");
+  }
+  const oauth2Client = getOAuthClient();
+  oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+  const drive = google.drive({ version: "v3", auth: oauth2Client });
+  try {
+    return await getOrCreateFolder(drive, folderName, parentFolderId);
+  } catch (error) {
+    throw new Error(getGoogleErrorMessage(error));
+  }
+};
+
+const deleteImageFromDrive = async (driveFileId) => {
+  if (!isDriveUploadConfigured()) return;
+  const oauth2Client = getOAuthClient();
+  oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+  const drive = google.drive({ version: "v3", auth: oauth2Client });
+  try {
+    await drive.files.delete({
+      fileId: driveFileId,
+      supportsAllDrives: true
+    });
+  } catch (error) {
+    console.error(`Failed to delete Google Drive file ${driveFileId}:`, error.message || error);
+  }
+};
+
 const getDriveUploadFolder = async () => {
   if (!isDriveUploadConfigured()) {
     throw new Error("Google Drive upload is not configured");
@@ -128,5 +201,8 @@ export {
   getDriveUploadFolder,
   getGoogleAuthUrl,
   isDriveUploadConfigured,
-  uploadImageToDrive
+  uploadImageToDrive,
+  getOrCreateOrganizationFolder,
+  getOrCreateSubfolder,
+  deleteImageFromDrive
 };
